@@ -4,6 +4,7 @@ package ru.otus.module1
 
 import ru.otus.module1.variance.{Animal, Cat}
 
+import scala.annotation.tailrec
 import scala.language.postfixOps
 
 
@@ -164,14 +165,37 @@ object variance {
     def flatMap[B](f: T => Option[B]): Option[B] =
       if (isEmpty) None
       else f(this.asInstanceOf[Some[T]].v)
+
+    /**
+     *
+     * Реализовать метод zip, который будет создавать Option от пары значений из 2-х Option
+     */
+    def zip[B](p: Option[B]): Option[(T, B)]
+
+    /**
+     *
+     * Реализовать метод filter, который будет возвращать не пустой Option
+     * в случае если исходный не пуст и предикат от значения = true
+     */
+
+    def filter(f: T => Boolean): Option[T]
   }
 
   object Option {
     def apply[T](v: T): Option[T] = Some(v)
   }
 
-  case class Some[T](v: T) extends Option[T]
-  case object None extends Option[Nothing]
+  case class Some[T](v: T) extends Option[T] :
+    def zip[B](p: Option[B]): Option[(T, B)] = p match
+      case Some(r) => Some((v, r))
+      case None => None
+
+    def filter(f: T => Boolean): Option[T] =
+      if (f(v)) Some(this.v) else None
+
+  case object None extends Option[Nothing]:
+    def zip[B](p: Option[B]): Option[(Nothing, B)] = None
+    def filter(f: Nothing => Boolean): Option[Nothing] = None
 
   var animalOpt: Option[Animal] = None
   var intOpt: Option[Int] = ???
@@ -183,19 +207,13 @@ object variance {
    *
    * Реализовать метод printIfAny, который будет печатать значение, если оно есть
    */
+    def printIfAny[T](value: Option[T]): Unit = value match
+      case Some(v) => println(v)
+      case _ =>
 
 
-  /**
-   *
-   * Реализовать метод zip, который будет создавать Option от пары значений из 2-х Option
-   */
 
 
-  /**
-   *
-   * Реализовать метод filter, который будет возвращать не пустой Option
-   * в случае если исходный не пуст и предикат от значения = true
-   */
 
  }
 
@@ -210,8 +228,39 @@ object variance {
 
 
     sealed trait List[+T]{
-      def ::[TT >: T](elem: TT): List[TT] = ???
-    }
+     def ::[TT >: T](elem: TT): List[TT] = new::(elem, this)
+
+     def ++[TT >: T](elem: List[TT]): List[TT] =
+       this match
+         case Nil => elem
+         case head :: tail => new::(head, tail ++ elem)
+
+     def flatmap[TT >: T](f: TT => List[TT]): List[TT] = this match
+       case Nil => Nil
+       case head :: tail => f(head) ++ tail.flatmap(f)
+
+     /**
+      *
+      * Реализовать метод map для списка который будет применять некую ф-цию к элементам данного списка
+      */
+
+     def map[TT >: T](f: TT => TT): List[TT] = this match
+       case Nil => Nil
+       case head :: tail => f(head) :: tail.map(f)
+
+
+     /**
+      *
+      * Реализовать метод filter для списка который будет фильтровать список по некому условию
+      */    def filter[TT >: T](f: TT => Boolean): List[TT] = this match
+       case Nil => Nil
+       case head :: tail => if (f(head)) head :: tail.filter(f) else tail.filter(f)
+
+     def mkString(delimiter: String): String = this match
+       case Nil => ""
+       case head :: Nil => head.toString
+       case head :: tail => head.toString + delimiter + tail.mkString(delimiter)
+     }
 
 
     case class ::[A](head: A, tail: List[A]) extends List[A]
@@ -239,29 +288,28 @@ object variance {
       *
       * Реализовать метод reverse который позволит заменить порядок элементов в списке на противоположный
       */
-
-    /**
-      *
-      * Реализовать метод map для списка который будет применять некую ф-цию к элементам данного списка
-      */
-
-
-    /**
-      *
-      * Реализовать метод filter для списка который будет фильтровать список по некому условию
-      */
+      def reverse[T](a : List[T]): List[T] = {
+        @tailrec
+        def helper(oldL : List[T], accL :  List[T] = Nil) : List[T] = {
+          oldL match
+            case Nil => accL
+            case head :: tail => helper(tail,::(head,accL))
+        }
+        helper(a)
+      }
 
     /**
       *
       * Написать функцию incList которая будет принимать список Int и возвращать список,
       * где каждый элемент будет увеличен на 1
       */
-
+      val incList : (List[Int] => List[Int]) = a => a.map(k=>k+1)
 
     /**
       *
       * Написать функцию shoutString которая будет принимать список String и возвращать список,
       * где к каждому элементу будет добавлен префикс в виде '!'
       */
+    val shoutString: (List[String] => List[String]) = a => a.map("!"+_)
 
  }
