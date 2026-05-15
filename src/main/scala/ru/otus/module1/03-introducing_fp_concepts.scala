@@ -252,7 +252,8 @@ object variance {
      /**
       *
       * Реализовать метод filter для списка который будет фильтровать список по некому условию
-      */    def filter[TT >: T](f: TT => Boolean): List[TT] = this match
+      */
+     def filter[TT >: T](f: TT => Boolean): List[TT] = this match
        case Nil => Nil
        case head :: tail => if (f(head)) head :: tail.filter(f) else tail.filter(f)
 
