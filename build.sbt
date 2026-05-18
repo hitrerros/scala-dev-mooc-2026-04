@@ -6,3 +6,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "scala-dev-mooc-2026-04"
   )
+
+libraryDependencies ++= Seq(
+  "org.scalatest" %% "scalatest" % "3.2.19" % Test
+)
