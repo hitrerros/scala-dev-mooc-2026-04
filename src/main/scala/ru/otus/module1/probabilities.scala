@@ -6,11 +6,7 @@ val WHITE = 1
 val numberOfElements = 10000
 
 case class BucketList(ob : List[Int]) {
-  def extractTwo : Boolean  = {
-      val r = rnd.shuffle(ob)
-      val selected = r.take(2)
-      selected.contains(WHITE)
-  }
+  def extractTwo : Boolean  = rnd.shuffle(ob).take(2).contains(WHITE)
 }
 
 object BucketList {
