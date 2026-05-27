@@ -4,6 +4,7 @@ package ru.otus.module1
 
 import ru.otus.module1.variance.{Animal, Cat}
 
+import scala.annotation.tailrec
 import scala.language.postfixOps
 
 
