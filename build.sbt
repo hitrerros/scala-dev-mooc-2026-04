@@ -7,6 +7,5 @@ lazy val root = (project in file("."))
     name := "scala-dev-mooc-2026-04"
   )
 
-libraryDependencies ++= Seq(
-  "org.scalatest" %% "scalatest" % "3.2.19" % Test
-)
+libraryDependencies += "org.scalactic" %% "scalactic" % "3.2.20"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % "test"
