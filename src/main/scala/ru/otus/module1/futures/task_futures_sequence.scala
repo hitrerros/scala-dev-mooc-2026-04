@@ -1,8 +1,7 @@
 package ru.otus.module1.futures
 
-import ru.otus.module1.futures.HomeworksUtils.task
-
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success, Try}
 
 object task_futures_sequence {
 
@@ -21,6 +20,12 @@ object task_futures_sequence {
    */
   def fullSequence[A](futures: List[Future[A]])
                      (implicit ex: ExecutionContext): Future[(List[A], List[Throwable])] =
-    task"Реализуйте метод `fullSequence`" ()
-
+   // task"Реализуйте метод `fullSequence`" ()
+   Future.sequence(futures.map(_.transform(s => Try(s)))).map { values =>
+    (
+      values.collect { case Success(s) => s },
+      values.collect { case Failure(f) => f }
+    )
+   }
 }
+
