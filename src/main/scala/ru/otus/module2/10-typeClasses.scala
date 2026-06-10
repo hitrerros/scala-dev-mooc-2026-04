@@ -1,59 +1,43 @@
 package ru.otus.module2
 
+import ru.otus.module2.JsValue._
 import ru.otus.module2.type_classes.Eq.given_Eq_String
-import ru.otus.module2.type_classes.JsValue.{JsNull, JsNumber, JsString}
-import ru.otus.module2.type_classes.JsonWriter.{given}
 
+enum JsValue:
+  case JsObject(get: Map[String, JsValue])
+  case JsString(get: String)
+  case JsNumber(get: Double)
+  case JsNull
+// 1
 
-object type_classes {
+object type_classes extends App {
 
-  sealed trait JsValue
+   trait JsonWriter[T]:
+       def toJson(v: T): JsValue
 
-  object JsValue {
-    final case class JsObject(get: Map[String, JsValue]) extends JsValue
-
-    final case class JsString(get: String) extends JsValue
-
-    final case class JsNumber(get: Double) extends JsValue
-
-    case object JsNull extends JsValue
-  }
-  
-  // 1
-  
-  trait JsonWriter[T] {
-    def toJson(v: T): JsValue
-  }
-  
-  object JsonWriter {
-    
+   object JsonWriter:
     def apply[T](using ev: JsonWriter[T]) = ev
-    
-    def from[T](f: T => JsValue): JsonWriter[T] = new JsonWriter[T] {
-        override def toJson(v: T): JsValue = f(v)
-    }
-    
-    given JsonWriter[String] = from[String](JsString)
+    private val from = [T] => (f: T => JsValue) => new JsonWriter[T]:
+     override def toJson(v: T): JsValue = f(v)
 
+    given JsonWriter[String] = from[String](JsString)
     given JsonWriter[Int] = from[Int](JsNumber)
-    
-    given optJson [T](using jw: JsonWriter[T]): JsonWriter[Option[T]] = from[Option[T]] {
+
+    given optJson [T](using jw: JsonWriter[T]): JsonWriter[Option[T]] = from[Option[T]] :
       case Some(value) => jw.toJson(value)
       case None => JsNull
-    }
-  }
 
+   def toJson[T: JsonWriter](v: T): JsValue =
+    summon[JsonWriter[T]].toJson(v)
+  
+   println(toJson("vffv"))
+   println(toJson(10))
 
-  def toJson[T: JsonWriter](v: T): JsValue = JsonWriter[T].toJson(v)
-  
-  toJson("vffv")
-  toJson(10)
-  
-//  "fvhfujhubvf".toJson
-//  10.toJson
-//  Option(10).toJson
-//  Option("vdfvf").toJson
-  
+  //  "fvhfujhubvf".toJson
+  //  10.toJson
+   println( toJson( Option(10)))
+  //  Option("vdfvf").toJson
+
   
 
 
@@ -69,7 +53,7 @@ object type_classes {
 
     given Ordering[Int] = from[Int](_ < _)
 
-    given Ordering[String] = from[String](_ < _)
+    given Ordering[String] = from[String](_.length < _.length)
 
     given Ordering[User] = from[User](_.age < _.age)
   }
