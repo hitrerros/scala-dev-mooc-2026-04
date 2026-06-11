@@ -11,10 +11,9 @@ object higher_kinded_types{
   def tuple[E, A, B](a: Either[E, A], b: Either[E, B]): Either[E, (A, B)] =
     a.flatMap{ a => b.map((a, _))}
 
+  def tupleF[F[_], A,B](fa: Bindable[F,A], fb: Bindable[F,B]): F[(A, B)] =
+    fa.flatMap{ x => fb.map( y => (x, y))}
 
-
-  def tupleF[F[_], A, B](fa: F[A], fb: F[B]): F[(A, B)] = ???
-  
   trait Bindable[F[_], A] {
     def map[B](f: A => B): F[B]
     def flatMap[B](f: A => F[B]): F[B]
@@ -47,7 +46,8 @@ object higher_kinded_types{
   val r1 = println(tupleBindable(optBindable(optA), optBindable(optB)))
   val r2 = println(tupleBindable(listBindable(list1), listBindable(list2)))
 
-
+  val r3 = println(tupleF(listBindable(list1), listBindable(list2)))
+  val r4 = println(tupleF(optBindable(optA), optBindable(optB)))
 
 
 }
