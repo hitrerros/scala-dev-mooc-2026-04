@@ -1,6 +1,19 @@
 package ru.otus.module2
 
-object higher_kinded_types{
+object higher_kinded_types extends App {
+
+  trait TupleF[F[_]] {
+    def tupleImplicit[A, B](fa: F[A], fb: F[B]): F[(A, B)]
+  }
+
+  object TupleF {
+    implicit val optionT: TupleF[Option] = new TupleF[Option] {
+      def tupleImplicit[A,B](a: Option[A], b : Option[B]): Option[(A, B)] = tuple(a,b)
+    }
+    implicit val listT: TupleF[List] = new TupleF[List] {
+      def tupleImplicit[A,B](a: List[A], b : List[B]): List[(A, B)] = tuple(a,b)
+    }
+  }
 
   def tuple[A, B](a: List[A], b: List[B]): List[(A, B)] =
     a.flatMap{ a => b.map((a, _))}
@@ -11,17 +24,13 @@ object higher_kinded_types{
   def tuple[E, A, B](a: Either[E, A], b: Either[E, B]): Either[E, (A, B)] =
     a.flatMap{ a => b.map((a, _))}
 
-  def tupleF[F[_], A,B](fa: Bindable[F,A], fb: Bindable[F,B]): F[(A, B)] =
-    fa.flatMap{ x => fb.map( y => (x, y))}
-
   trait Bindable[F[_], A] {
     def map[B](f: A => B): F[B]
     def flatMap[B](f: A => F[B]): F[B]
   }
   
-  def tupleBindable[F[_], A, B](fa: Bindable[F, A], fb: Bindable[F, B]): F[(A, B)] =
-    fa.flatMap{ a => fb.map((a, _))}
-
+  def tupleF[F[_] : TupleF , A, B](fa: F[A], fb: F[B]): F[(A, B)] =
+     implicitly[TupleF[F]].tupleImplicit(fa,fb)
 
   def optBindable[A](opt: Option[A]): Bindable[Option, A] = new Bindable[Option, A] {
     override def map[B](f: A => B): Option[B] = opt.map(f)
@@ -43,11 +52,8 @@ object higher_kinded_types{
   val list1 = List(1, 2, 3)
   val list2 = List(4, 5, 6)
   
-  val r1 = println(tupleBindable(optBindable(optA), optBindable(optB)))
-  val r2 = println(tupleBindable(listBindable(list1), listBindable(list2)))
-
-  val r3 = println(tupleF(listBindable(list1), listBindable(list2)))
-  val r4 = println(tupleF(optBindable(optA), optBindable(optB)))
+  val r5 = tupleF(Option(1), Option(2))
+  val r6 = tupleF(List(1), List(2))
 
 
 }
