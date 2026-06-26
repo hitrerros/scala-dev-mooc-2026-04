@@ -5,7 +5,7 @@ import ru.otus.module2.type_classes.JsValue.{JsNull, JsNumber, JsString}
 import ru.otus.module2.type_classes.JsonWriter.{given}
 
 
-object type_classes {
+object type_classes extends App {
 
   sealed trait JsValue
 
@@ -21,35 +21,33 @@ object type_classes {
   
   // 1
   
-  trait JsonWriter[T] {
+  trait JsonWriter[-T] {
     def toJson(v: T): JsValue
   }
   
   object JsonWriter {
     
-    def apply[T](using ev: JsonWriter[T]) = ev
+    def apply[T](implicit ev: JsonWriter[T]): JsonWriter[T] = ev
     
-    def from[T](f: T => JsValue): JsonWriter[T] = new JsonWriter[T] {
-        override def toJson(v: T): JsValue = f(v)
-    }
-    
-    given JsonWriter[String] = from[String](JsString)
+    def from[T](f: T => JsValue): JsonWriter[T] = (v: T) => f(v)
 
-    given JsonWriter[Int] = from[Int](JsNumber)
-    
-    given optJson [T](using jw: JsonWriter[T]): JsonWriter[Option[T]] = from[Option[T]] {
-      case Some(value) => jw.toJson(value)
+    implicit val jsonStringWriter: JsonWriter[String] = from(v => JsString(v))
+    implicit val jsonIntWriter: JsonWriter[Int] =  from(v => JsNumber(v))
+    implicit def jsonOptWriter[T](implicit jw : JsonWriter[T]): JsonWriter[Option[T]] = {
+      case Some(value) => toJson(value)
       case None => JsNull
     }
   }
 
-
-  def toJson[T: JsonWriter](v: T): JsValue = JsonWriter[T].toJson(v)
+  def toJson[T: JsonWriter](v: T): JsValue = implicitly(JsonWriter[T]).toJson(v)
   
   toJson("vffv")
   toJson(10)
-  
-//  "fvhfujhubvf".toJson
+  toJson(Option(10))
+  toJson(Some(10))
+
+
+  //  "fvhfujhubvf".toJson
 //  10.toJson
 //  Option(10).toJson
 //  Option("vdfvf").toJson
@@ -67,11 +65,9 @@ object type_classes {
       override def less(a: A, b: A): Boolean = f(a, b)
     }
 
-    given Ordering[Int] = from[Int](_ < _)
-
-    given Ordering[String] = from[String](_ < _)
-
-    given Ordering[User] = from[User](_.age < _.age)
+     implicit val orderingInt : Ordering[Int] = from(_ < _)
+     implicit val stringInt: Ordering[String] = from(_.length < _.length)
+     implicit val userInt: Ordering[User] = from(_.age < _.age)
   }
 
   case class User(name: String, age: Int)
