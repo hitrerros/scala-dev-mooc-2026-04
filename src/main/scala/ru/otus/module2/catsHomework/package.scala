@@ -33,6 +33,8 @@ package object catsHomework {
         case Branch(left, right) => Branch(map(left)(f),map(right)(f))
         case Leaf(v) => Leaf(f(v))
 
+
+
   /**
    * Monad абстракция для последовательной
    * комбинации вычислений в контексте F
@@ -77,6 +79,7 @@ package object catsHomework {
      def handleError[A](fa: Try[A])(f: Throwable => A): Try[A] = fa.recover(v=>f(v))
      def ensure[A](fa: Try[A])(e: Throwable)(f: A => Boolean): Try[A] = fa.filter(f(_)).orElse(Failure(e))
    }
+
 
 
   /**

@@ -33,7 +33,7 @@ package object zio_homework {
 
   def doWhile(eff : Task[Boolean]): Task[Boolean] = eff.repeatUntil(res => res)
 
-    /**
+  /**
    * 3. Реализовать метод, который безопасно прочитает конфиг из переменных окружения, а в случае ошибки вернет дефолтный конфиг
    * и выведет его в консоль
    * Используйте эффект "Configuration.config" из пакета config

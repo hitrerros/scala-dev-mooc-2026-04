@@ -8,6 +8,9 @@ package object config {
   case class AppConfig(host: String, port: String)
   case class EnvVarConfigValues(envKey: String, envValue: String)
 
+
+
+
   private val myConfigAutomatic: Config[AppConfig] = deriveConfig[AppConfig]
 
   object Configuration{
