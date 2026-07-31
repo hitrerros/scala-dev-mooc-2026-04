@@ -15,6 +15,17 @@ libraryDependencies += "dev.zio" %% "zio-config-magnolia" % "4.0.8"
 libraryDependencies += "dev.zio" %% "zio-config-typesafe" % "4.0.8"
 libraryDependencies += "dev.zio" %% "zio-config-refined"  % "4.0.8"
 
+// Cats Effect
+libraryDependencies += "org.typelevel" %% "cats-effect" % "3.7.0"
+
+libraryDependencies += "dev.zio" %% "zio" % "2.1.26"
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % Test
+
+libraryDependencies += "dev.zio" %% "zio-config"           % "4.0.8"
+libraryDependencies += "dev.zio" %% "zio-config-magnolia"  % "4.0.8"
+libraryDependencies += "dev.zio" %% "zio-config-typesafe"   % "4.0.8"
+libraryDependencies += "dev.zio" %% "zio-config-refined"    % "4.0.8"
+
 libraryDependencies ++= Seq(
   "dev.zio" %% "zio-test"          % "2.1.26" % Test,
   "dev.zio" %% "zio-test-sbt"      % "2.1.26" % Test,
