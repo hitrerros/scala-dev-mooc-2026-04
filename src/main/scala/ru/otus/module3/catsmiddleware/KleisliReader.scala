@@ -44,7 +44,7 @@ object catsMiddlewareKleisli {
 
   def main(args: Array[String]): Unit = {
     val getUserOrderK: Kleisli[Future, Int, Option[String]] = getUserK.flatMap{
-      case Some(name) => Kleisli.liftF(getOrderK.run(name)) //Kleisli[Future, Int, Option[String]]
+      case Some(name) => Kleisli.liftF(getOrderK.run(name))
       case None => Kleisli.liftF[Future, Int, Option[String]](Future.successful(None))
     }
 
