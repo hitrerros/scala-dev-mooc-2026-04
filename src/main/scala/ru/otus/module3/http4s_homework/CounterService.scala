@@ -22,7 +22,3 @@ final class CounterService[F[_] : Concurrent] {
      } yield v
 }
 
-
-object CounterService{
-
-}
