@@ -9,11 +9,12 @@ final class SlowdownService [F[_] : Temporal] {
 
   val stream: Stream[F, Byte] = Stream.emits("A".getBytes).repeat
 
-  def getData(chunk : Int,total  : Long, time  : Int) : F[Chunk[Byte]] =
-    stream
+  def getData(chunk : Int,total  : Long, time  : Int) : Stream[F, Byte] =
+     stream
+      .take(total)
       .chunkN(chunk)
       .metered(time.seconds)
-      .take(total)
-      .compile
-      .fold(Chunk.empty[Byte])(_ ++ _)
+      .flatMap(Stream.chunk)
+     
+      
 }

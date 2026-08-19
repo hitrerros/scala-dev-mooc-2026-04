@@ -19,7 +19,7 @@ object HttpHomeWorkServer extends IOApp.Simple {
     }
     val slowdownRoute : HttpRoutes[IO]  = HttpRoutes.of {
       case GET -> Root / "slow" / chunk / total / time =>
-           SlowdownService[IO].getData(chunk.toInt,total.toLong,time.toInt).flatMap(bytes => Ok(bytes))
+           Ok(SlowdownService[IO].getData(chunk.toInt,total.toLong,time.toInt))
     }
     counterRoute <+> validateParams(slowdownRoute)
   }
