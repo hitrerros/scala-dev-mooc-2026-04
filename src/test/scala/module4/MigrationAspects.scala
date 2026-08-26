@@ -5,12 +5,13 @@ import liquibase.database.jvm.JdbcConnection
 import liquibase.resource.{ClassLoaderResourceAccessor, CompositeResourceAccessor, FileSystemResourceAccessor}
 import liquibase.servicelocator.LiquibaseService
 import ru.otus.module4.DBTransactor.DataSource
+import zio.test.TestAspect
 import zio.test.TestAspect.*
 import zio.{RIO, Scope, ZIO, ZLayer}
 
 object MigrationAspects {
 
-  def migrate() = {
+  def migrate(): TestAspect[Nothing, Liquibase, Nothing, Any] = {
     before(LiquibaseService.performMigration.orDie)
   }
 
@@ -19,8 +20,8 @@ object MigrationAspects {
 object LiquibaseService {
   def performMigration: RIO[Liquibase, Unit] =
     for {
-      _ <- ZIO.serviceWith[Liquibase] (_.dropAll())
       _ <- ZIO.serviceWith[Liquibase] (_.update("dev"))
+      _ <- ZIO.logInfo("dev updated")
     } yield()
 
   def mkLiquibase(): ZIO[Any with Scope with DataSource, Throwable, Liquibase] = for {
