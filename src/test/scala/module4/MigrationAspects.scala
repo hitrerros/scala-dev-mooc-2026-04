@@ -21,7 +21,6 @@ object LiquibaseService {
   def performMigration: RIO[Liquibase, Unit] =
     for {
       _ <- ZIO.serviceWith[Liquibase] (_.update("dev"))
-      _ <- ZIO.logInfo("dev updated")
     } yield()
 
   def mkLiquibase(): ZIO[Any with Scope with DataSource, Throwable, Liquibase] = for {

@@ -37,11 +37,11 @@ class UserRepositoryImpl extends UserRepository {
   import dc.*
 
     inline def userSchema: Quoted[EntityQuery[User]] = quote {
-        querySchema[User]("userok")
+        querySchema[User]("users")
     }
 
     inline def roleSchema: Quoted[EntityQuery[Role]] = quote {
-        querySchema[Role]("role")
+        querySchema[Role]("roles")
     }
 
     inline def userToRoleSchema: Quoted[EntityQuery[UserToRole]] = quote {
@@ -74,9 +74,19 @@ class UserRepositoryImpl extends UserRepository {
   override def insertRoleToUser(roleCode: RoleCode, userId: UserId): QIO[Unit] =
       dc.run(userToRoleSchema.insertValue(lift(UserToRole(roleCode.code, userId.id)))).unit
 
-  override def listUsersWithRole(roleCode: RoleCode): QIO[List[User]] =  dc.run {
-      userSchema.join(userToRoleSchema).on((user, utr) => user.id == utr.userId && utr.roleId == lift(roleCode.code))
-        .map((u,_) => u)
+  override def listUsersWithRole(roleCode: RoleCode): QIO[List[User]] = {
+    // вот так почему-то ругается на какую-то синтаксическую ошибку в запросе
+    //    dc.run {
+    //      userSchema.join(userToRoleSchema)
+    //        .on((user, utr) => user.id == utr.userId && utr.roleId == lift(roleCode.code))
+    //        .map((u,_) => u)
+    //  }
+    dc.run {
+      for {
+        utr <- userToRoleSchema.filter(v => v.roleId == lift(roleCode.code))
+        usr <- userSchema.filter(u => u.id == utr.userId)
+      } yield (usr)
+      }
   }
 
   override def findRoleByCode(roleCode: RoleCode): QIO[Option[Role]] =
