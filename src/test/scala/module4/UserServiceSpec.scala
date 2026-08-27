@@ -4,18 +4,15 @@ import ru.otus.module4.homework.dao.entity.{Role, RoleCode, User}
 import ru.otus.module4.homework.dao.repository.UserRepository
 import ru.otus.module4.homework.services.UserService
 import zio.ZIO
-import zio.test.Assertion._
-import zio.test._
+import zio.test.*
+import zio.test.Assertion.*
 
 import java.util.UUID
 
 
 object UserServiceSpec extends ZIOSpecDefault {
 
-  import MigrationAspects._
-
-  private val dc = DBTransactor.Ctx
-
+  import MigrationAspects.*
 
   private val users = List(
     User(UUID.randomUUID().toString, scala.util.Random.nextString(15), scala.util.Random.nextString(30), scala.util.Random.nextInt(120)),
@@ -60,7 +57,7 @@ object UserServiceSpec extends ZIOSpecDefault {
       } yield assert(result.length)(equalTo(1)) && assert(result.head.user)(equalTo(users.head)) &&
         assert(result.head.roles)(equalTo(Set(Role(Manager.code, "Manager"))))
     ) @@ migrate()
-  ).provideShared(
+  ).provide(
     TestContainer.postgres(),
     DBTransactor.test,
     LiquibaseService.liquibaseLayer,
