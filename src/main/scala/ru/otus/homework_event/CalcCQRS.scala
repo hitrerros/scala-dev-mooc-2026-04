@@ -209,7 +209,7 @@ object CalcCQRS extends ZIOAppDefault {
       .handle(command, correlationId)
       .tap(events =>
         Console.printLine(
-          s"Command: $command\nEvents: ${events.mkString(",")}\n"
+          s"Command: $command\nEvents: ${events.mkString(",")}"
         )
       )
 
