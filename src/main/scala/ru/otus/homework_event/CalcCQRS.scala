@@ -3,6 +3,7 @@ package ru.otus.homework_event
 import ru.otus.homework_event.CalcOperator.*
 import ru.otus.homework_event.CalcStatus.*
 import zio.{
+  Console,
   IO,
   Ref,
   Scope,
@@ -20,7 +21,7 @@ import java.util.UUID
 
 sealed trait CalcEvent
 final case class CalcPerformed(calcId: String, bufferedValue: BigDecimal) extends CalcEvent
-final case class CalcResetted(calcId: String) extends CalcEvent
+final case class CalcResetPerformed(calcId: String) extends CalcEvent
 final case class CalcTurnedOn(calcId: String) extends CalcEvent
 final case class CalcTurnedOff(calcId: String) extends CalcEvent
 
@@ -59,7 +60,9 @@ type EnvelopeT = CalcEventEnvelope[? <: CalcEvent]
 trait CalcEventLog {
    def append(event : EnvelopeT) : UIO[Unit]
    def byAggregateId(aggregateId : String) : UIO[Vector[EnvelopeT]]
+
 }
+
 
 private final case class CalcInMemoryEventLog(ref : Ref[Vector[EnvelopeT]]) extends CalcEventLog {
   override def append(event: EnvelopeT): UIO[Unit]
@@ -89,11 +92,28 @@ final case class CalculatorState( calculatorId : String, bufferedValue : BigDeci
 object CalculatorActor {
 
   def evolve(state: Option[CalculatorState], event: CalcEvent) : Option[CalculatorState] = event match {
-    case res @ c : CalcPerformed => state.map(v => CalculatorState(v.calculatorId,res.bufferedValue,READY_TO_CALC))
-    case c : CalcResetted =>  state.map(v => CalculatorState(v.calculatorId,0,READY_TO_CALC))
-    case c : CalcTurnedOn => state.map(v => CalculatorState(v.calculatorId,0,READY_TO_CALC))
-    case c : CalcTurnedOff => state.map(v => CalculatorState(v.calculatorId,0,CalcStatus.SHUTDOWN))
-  }
+    case CalcTurnedOn(calcId) =>
+      Some(
+        CalculatorState(
+          calculatorId = calcId,
+          bufferedValue = BigDecimal(0),
+          status = READY_TO_CALC
+        )
+      )
+
+    case CalcPerformed(_, value) =>
+      state.map(
+        _.copy(
+          bufferedValue = value,
+          status = READY_TO_CALC
+        )
+      )
+
+    case CalcResetPerformed(_) =>
+      state.map(_.copy(bufferedValue = BigDecimal(0)))
+
+    case CalcTurnedOff(_) =>
+      state.map(_.copy(status = SHUTDOWN))  }
 
   def replay(events : Seq[EnvelopeT]) : Option[CalculatorState] = {
     events.foldLeft(Option.empty[CalculatorState]) {
@@ -105,15 +125,13 @@ object CalculatorActor {
               state: Option[CalculatorState],
               command: CalcCommand
             ): Either[CalcError, List[CalcEvent]] = {
-    state match {
-      case Some(st) =>
-        command match {
-          case cmd: CalcOn => validateAndExecuteOn(st,cmd)
-          case cmd: CalcOff => validateAndExecuteOff(st,cmd)
-          case cmd: CalcReset => validateAndExecuteReset(st,cmd)
-          case v @ cmd: CalcPerform => validateAndExecutePerform(st,v)
-        }
-      case None => Left(UnknownError("unknown error"))
+    (state,command) match {
+          case (Some(st),CalcOn(_))  => validateAndExecuteOn(st,command)
+          case (Some(st),CalcOff(_)) => validateAndExecuteOff(st,command)
+          case (Some(st),CalcReset(_)) => validateAndExecuteReset(st,command)
+          case (Some(st),v @ CalcPerform(_,_,_)) => validateAndExecutePerform(st,v)
+          case (None, init @ CalcOn(id))  => Right(List(CalcTurnedOn(id)))
+          case (None, _ ) =>  Left(UnknownError("unknown error"))
     }
   }
 
@@ -132,7 +150,7 @@ object CalculatorActor {
 
   private def validateAndExecuteReset(state: CalculatorState, command: CalcCommand) :  Either[CalcError, List[CalcEvent]] = {
     if (state.status == SHUTDOWN) Left(DeviceAlreadyOff(state.calculatorId, "device is already shutdown"))
-    else Right(List(CalcResetted(state.calculatorId)))
+    else Right(List(CalcResetPerformed(state.calculatorId)))
   }
 
 
@@ -166,7 +184,7 @@ final class CalculatorCommandHandler(eventLog: CalcEventLog) {
       _ <- ZIO.foreachDiscard(newEvents) {
         event =>
           eventLog.append(CalcEventEnvelope(
-            eventId = UUID.randomUUID(), aggregateId = "EASY_CALC", eventType = event.getClass.getSimpleName, version = 1,
+            eventId = UUID.randomUUID(), aggregateId = command.calcId, eventType = event.getClass.getSimpleName, version = 1,
             timeStamp = Instant.now(), correlationId = Some(correlationId), producer = "calculator-serice", payload = event
           ))
       }
@@ -181,14 +199,36 @@ object CalculatorCommandHandler {
 
 object CalcCQRS extends ZIOAppDefault {
 
-   val program = for {
+  val calcId = "calc-010101"
+  private def calculate(
+                       handler: CalculatorCommandHandler,
+                       command: CalcCommand,
+                       correlationId: UUID
+                     ) =
+    handler
+      .handle(command, correlationId)
+      .tap(events =>
+        Console.printLine(
+          s"Command: $command\nEvents: ${events.mkString(",")}\n"
+        )
+      )
+
+
+   val flow = for {
        eventLog <- ZIO.service[CalcEventLog]
        handler <- ZIO.service[CalculatorCommandHandler]
        correlationId = UUID.randomUUID()
 
+       _ <- calculate( handler, CalcOn(calcId), correlationId )
+       _ <- calculate( handler, CalcPerform( calcId, 10, ADD ), correlationId )
+       _ <- calculate( handler, CalcPerform( calcId, 20, MULTIPLY ), correlationId )
 
+       history <- eventLog.byAggregateId(calcId)
+       _ <- Console.printLine( s"history:\n${history.mkString("\n")}" )
+
+       _ <- calculate( handler, CalcOff(calcId), correlationId )
 
    } yield ()
 
-  override def run: ZIO[ZIOAppArgs & Scope, Any, Any] = program.provide(CalcInMemoryEventLog.layer,CalculatorCommandHandler.layer)
+  override def run: ZIO[ZIOAppArgs & Scope, Any, Any] = flow.provide(CalcInMemoryEventLog.layer,CalculatorCommandHandler.layer)
 }
