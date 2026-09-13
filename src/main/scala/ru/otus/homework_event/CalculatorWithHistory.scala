@@ -56,25 +56,25 @@ final class InMemoryEventLog:
     events.filter(_.aggregateId == aggregateId)
 
 // ---------------------------------------------------
-final case class CalculatorState( calculatorId: String, status: CalculatorStatus )
+final case class OldCalculatorState( calculatorId: String, status: CalculatorStatus )
 
 object Calculator {
 
-   def evolve(state: Option[CalculatorState],event: CalculationEvent): Option[CalculatorState] =
+   def evolve(state: Option[OldCalculatorState],event: CalculationEvent): Option[OldCalculatorState] =
       event match {
-        case DeviceTurnedOn(calculatorId) =>   Some(CalculatorState(calculatorId, CalculatorStatus.ON))
-        case DeviceTurnedOff(calculatorId)  =>  Some(CalculatorState(calculatorId, CalculatorStatus.OFF))
+        case DeviceTurnedOn(calculatorId) =>   Some(OldCalculatorState(calculatorId, CalculatorStatus.ON))
+        case DeviceTurnedOff(calculatorId)  =>  Some(OldCalculatorState(calculatorId, CalculatorStatus.OFF))
         case _  =>
           state match {
             case Some(current) if (current.status == CalculatorStatus.ON) => Some(current)
             case _ => state
-          }
+          } 
       }
 
    def replay(
               events: Seq[EventEnvelope[? <: CalculationEvent]]
-            ): Option[CalculatorState] =
-    events.foldLeft(Option.empty[CalculatorState]) {
+            ): Option[OldCalculatorState] =
+    events.foldLeft(Option.empty[OldCalculatorState]) {
       case (state, envelope) =>
         evolve(state, envelope.payload)
     }
